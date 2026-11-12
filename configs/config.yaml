@@ -1,0 +1,61 @@
+# Production Deep Metric Learning Configuration
+project_name: "visual-search-engine"
+seed: 42
+
+dataset:
+  name: "stanford_online_products"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  metadata_file: "data/processed/sop_metadata_clean.csv"
+  target_categories:
+    - "chair"
+    - "sofa"
+    - "table"
+    - "lamp"
+    - "cabinet"
+  target_total_images: 40000
+  min_images_per_identity: 2
+  split_ratios:
+    train: 0.70
+    val: 0.10
+    test: 0.20
+
+preprocessing:
+  image_size: 224
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+  batch_size: 32
+  num_workers: 2
+
+model:
+  backbone: "resnet50"
+  pretrained: true
+  freeze_early_layers: true
+  freeze_until: "layer3" # Freezes conv1, bn1, layer1, layer2; trains layer3, layer4, projection
+  embedding_dim: 512
+  l2_normalize: true
+
+training:
+  loss: "triplet_margin"
+  margin: 0.2
+  learning_rate: 0.0001
+  weight_decay: 0.00001
+  epochs: 15
+  hard_negative_mining: true
+  checkpoint_dir: "models/checkpoints"
+  best_model_name: "best_metric_model.pt"
+
+indexing:
+  index_dir: "data/index"
+  faiss_exact_file: "data/index/faiss_flat_ip.index"
+  faiss_hnsw_file: "data/index/faiss_hnsw.index"
+  metadata_lookup_file: "data/index/metadata_lookup.json"
+  hnsw_m: 32
+  hnsw_ef_construction: 200
+  hnsw_ef_search: 64
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  top_k: 5
+

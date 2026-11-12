@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deep Metric Learning Visual Search Engine</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 { font-size: 1.25rem; font-weight: 600; }
+    .badge {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    main {
+      flex: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem;
+      width: 100%;
+    }
+    .upload-container {
+      background: var(--card-bg);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 2.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 2rem;
+    }
+    .upload-container:hover, .upload-container.drag-over {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 1rem;
+      display: inline-block;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    #fileInput { display: none; }
+    
+    .latency-bar {
+      display: none;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .latency-metric { text-align: center; }
+    .latency-metric span { display: block; color: var(--text-muted); font-size: 0.75rem; }
+    .latency-metric strong { color: var(--accent); font-size: 1rem; }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 2rem;
+    }
+    @media (max-width: 900px) {
+      .content-grid { grid-template-columns: 1fr; }
+    }
+    .query-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      height: fit-content;
+    }
+    .query-card h3 { font-size: 1rem; margin-bottom: 1rem; color: var(--text-muted); }
+    .query-img-wrapper {
+      width: 100%;
+      height: 280px;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .query-img-wrapper img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    
+    .results-section h3 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1.25rem;
+    }
+    .result-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .result-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--primary);
+    }
+    .result-img-wrapper {
+      width: 100%;
+      height: 180px;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .result-img-wrapper img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .result-info {
+      padding: 0.75rem;
+    }
+    .rank-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .score-badge {
+      float: right;
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .sku-id {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .loader {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Production Visual Search Engine</h1>
+    <div class="badge">ResNet-50 + FAISS HNSW</div>
+  </header>
+
+  <main>
+    <div class="upload-container" id="dropArea">
+      <div class="upload-icon">🔍</div>
+      <h2>Upload Query Image</h2>
+      <p style="color: var(--text-muted); margin-top: 0.5rem;">
+        Drag & drop a product image here, or browse from your device
+      </p>
+      <button class="btn" onclick="document.getElementById('fileInput').click()">Select Image</button>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
+    </div>
+
+    <div class="latency-bar" id="latencyBar" style="display: none;">
+      <div class="latency-metric">
+        <span>Image Preprocessing</span>
+        <strong id="latPreprocess">-- ms</strong>
+      </div>
+      <div class="latency-metric">
+        <span>ResNet-50 Inference</span>
+        <strong id="latInference">-- ms</strong>
+      </div>
+      <div class="latency-metric">
+        <span>FAISS HNSW Search</span>
+        <strong id="latSearch">-- ms</strong>
+      </div>
+      <div class="latency-metric">
+        <span>End-to-End Latency</span>
+        <strong id="latTotal" style="color: #60a5fa;">-- ms</strong>
+      </div>
+    </div>
+
+    <div class="loader" id="loader">
+      <p>Computing 512-D embedding and querying FAISS HNSW vector index...</p>
+    </div>
+
+    <div class="content-grid" id="contentGrid" style="display: none;">
+      <div class="query-card">
+        <h3>Query Preview</h3>
+        <div class="query-img-wrapper">
+          <img id="queryPreview" src="" alt="Query">
+        </div>
+      </div>
+
+      <div class="results-section">
+        <h3>Top Visual Matches</h3>
+        <div class="results-grid" id="resultsGrid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    const loader = document.getElementById('loader');
+    const contentGrid = document.getElementById('contentGrid');
+    const latencyBar = document.getElementById('latencyBar');
+    const queryPreview = document.getElementById('queryPreview');
+    const resultsGrid = document.getElementById('resultsGrid');
+
+    // Drag and drop handlers
+    ['dragenter', 'dragover'].forEach(name => {
+      dropArea.addEventListener(name, (e) => { e.preventDefault(); dropArea.classList.add('drag-over'); });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      dropArea.addEventListener(name, (e) => { e.preventDefault(); dropArea.classList.remove('drag-over'); });
+    });
+    dropArea.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files.length) handleUpload(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleUpload(e.target.files[0]);
+    });
+
+    async function handleUpload(file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please upload a valid image file (JPEG, PNG, or WebP).');
+        return;
+      }
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = (e) => { queryPreview.src = e.target.result; };
+      reader.readAsDataURL(file);
+
+      // UI states
+      loader.style.display = 'block';
+      contentGrid.style.display = 'none';
+      latencyBar.style.display = 'none';
+      resultsGrid.innerHTML = '';
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('/search', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || 'Search request failed');
+        }
+
+        const data = await response.json();
+        renderResults(data);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+
+    function renderResults(data) {
+      // Latency metrics
+      document.getElementById('latPreprocess').innerText = data.latency.preprocess_ms.toFixed(2) + ' ms';
+      document.getElementById('latInference').innerText = data.latency.inference_ms.toFixed(2) + ' ms';
+      document.getElementById('latSearch').innerText = data.latency.search_ms.toFixed(3) + ' ms';
+      document.getElementById('latTotal').innerText = data.latency.total_ms.toFixed(2) + ' ms';
+      latencyBar.style.display = 'flex';
+
+      // Populate results grid
+      resultsGrid.innerHTML = '';
+      data.results.forEach(item => {
+        const simPercent = (Math.max(0, item.similarity_score) * 100).toFixed(1);
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.innerHTML = `
+          <div class="result-img-wrapper">
+            <img src="${item.image_url}" alt="Match ${item.rank}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'><text x=\'50%\' y=\'50%\' fill=\'gray\' text-anchor=\'middle\'>No Image</text></svg>'">
+          </div>
+          <div class="result-info">
+            <div>
+              <span class="rank-tag">#${item.rank}</span>
+              <span class="score-badge">${simPercent}% Match</span>
+            </div>
+            <div class="sku-id">Product SKU: ${item.product_id}</div>
+          </div>
+        `;
+        resultsGrid.appendChild(card);
+      });
+
+      contentGrid.style.display = 'grid';
+    }
+  </script>
+</body>
+</html>
+

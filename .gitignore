@@ -1,0 +1,32 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Dataset & Artifacts (Avoid committing large binaries)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*.csv
+!data/processed/.gitkeep
+data/index/*
+!data/index/.gitkeep
+models/checkpoints/*
+!models/checkpoints/.gitkeep
+
+# Logs & Visualizations
+*.log
+runs/
+visualizations/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
